@@ -10,18 +10,14 @@ from bson.objectid import ObjectId
 
 from bson import ObjectId
 
-class SistemaCadastroApp:
+class SistemaCadastroApp(tk.Frame):
 
-    def __init__ (self, janela):
-
+    def __init__(self, master):
+        super().__init__(master)
+        self.configure(bg="#f0f0f0")
+        tk.Label(self, text="Cadastro de Tarefas").pack()
 
         self.janela = janela
-
-        self.janela.title("Sistema de cadastro")
-
-        self.janela.geometry("950x700")
-
-        self.janela.configure(bg = "#f0f0f0")
 
         self.cliente = MongoClient("mongodb://localhost:27017")
 
@@ -48,7 +44,7 @@ class SistemaCadastroApp:
                    background = [("selected", "black")],
                    foreground = [("selected", "white")])
 
-        quadroEntrada = tk.Frame(self.janela,
+        quadroEntrada = tk.Frame(self,
                                  bg="#f0f0f0")
 
         quadroEntrada.pack(pady=10,
@@ -154,7 +150,7 @@ class SistemaCadastroApp:
 
         self.comboStatus.current(0)
 
-        quadroBotoes = tk.Frame(self.janela,
+        quadroBotoes = tk.Frame(self,
                                 bg = "#f0f0f0")
 
         quadroBotoes.pack(pady=10)
@@ -201,7 +197,7 @@ class SistemaCadastroApp:
 
         botaoExcluir.grid(row=0, column=2, padx=10, pady=5)
 
-        quadroFiltro = tk.Frame(self.janela,
+        quadroFiltro = tk.Frame(self,
                                 bg="#f0f0f0")
 
         quadroFiltro.pack (pady=10)
@@ -246,7 +242,7 @@ class SistemaCadastroApp:
                          column=2,
                          padx=5)
 
-        quadroArvore = tk.Frame(self.janela,
+        quadroArvore = tk.Frame(self,
                                  bg="#f0f0f0")
 
         quadroArvore.pack(padx=20,
@@ -298,44 +294,9 @@ class SistemaCadastroApp:
 
         barraRolagem.configure(command=self.arvoreCadastro.yview)
 
-        #self.arvoreCadastro =  None
-
         self.carregarCadastros()
 
-        self.telaCadastro = tk.Frame(janela)
-        self.telaTarefa = tk.Frame(janela)
-
-        # Frame do menu superior
-        menu_superior = tk.Frame(janela, bg="#f0c808")  # Cor amarelinha combinando com abelhas 🐝
-        menu_superior.pack(fill=tk.X)
-
-        # Botão para ir para a tela de cadastro
-        btn_cadastro = tk.Button(menu_superior, text="Cadastro de Pessoas",
-                                 bg="#fff", fg="#000", font=("Arial", 10, "bold"),
-                                 command=lambda: self.alternar_tela("cadastro"))
-        btn_cadastro.pack(side=tk.LEFT, padx=10, pady=10)
-
-        # Botão para ir para a tela de tarefas
-        btn_tarefas = tk.Button(menu_superior, text="Cadastro de Tarefas",
-                                bg="#fff", fg="#000", font=("Arial", 10, "bold"),
-                                command=lambda: self.alternar_tela("tarefas"))
-        btn_tarefas.pack(side=tk.LEFT, padx=10, pady=10)
-
-        self.alternar_tela("cadastro")
-
-    def alternar_tela(self, tela):
-        # Esconde ambas as telas
-        self.telaCadastro.pack_forget()
-        self.telaTarefa.pack_forget()
-
-        # Exibe a tela solicitada
-        if tela == "cadastro":
-            self.telaCadastro.pack(fill="both", expand=True)
-        elif tela == "tarefas":
-            self.telaTarefa.pack(fill="both", expand=True)
-
-    def abrir_tela_tarefas(self):
-        TarefaApp(tk.Toplevel(self.janela), self.banco)
+        self.pack(fill="both", expand=True)
 
     def adcionar(self):
 
@@ -456,11 +417,9 @@ class SistemaCadastroApp:
             return  # Se o usuário cancelar, nada acontece
 
         try:
-            # Converte para ObjectId se ainda não estiver no formato correto
             if not isinstance(self.idCadastroSelecionado, ObjectId):
                 self.idCadastroSelecionado = ObjectId(self.idCadastroSelecionado)
 
-            # Exclui do MongoDB
             resultado = self.colecao.delete_one({"_id": self.idCadastroSelecionado})
 
             if resultado.deleted_count > 0:
@@ -468,9 +427,8 @@ class SistemaCadastroApp:
             else:
                 messagebox.showwarning("Aviso", "Nenhum cadastro foi excluído. Verifique o ID.")
 
-            # Atualiza a Treeview
             self.carregarCadastros()
-            self.idCadastroSelecionado = None  # Reseta a seleção
+            self.idCadastroSelecionado = None
             self.limparCamposEntrada()
 
         except Exception as e:
@@ -510,145 +468,9 @@ class SistemaCadastroApp:
 
         self.textoTelefone.bind("<KeyRelease>", self.formatar_telefone)
 
-class TarefaApp(tk.Frame):
-    def __init__(self, master, db):
-        super().__init__(master, bg="#f7f7f7")
-        self.master = master
-        self.db = db
-        self.colecao = db["tarefas"]
-        self.idTarefaSelecionada = None
 
-        self.criar_widgets()
-        self.carregar_tarefas()
-
-    def criar_widgets(self):
-        # Título
-        lblTitulo = tk.Label(self, text="Cadastro de Tarefas", font=("Arial", 18, "bold"), bg="#f7f7f7")
-        lblTitulo.pack(pady=10)
-
-        # Container dos campos
-        frameCampos = tk.Frame(self, bg="#f7f7f7")
-        frameCampos.pack(pady=10)
-
-        # Título da tarefa
-        tk.Label(frameCampos, text="Título:", bg="#f7f7f7").grid(row=0, column=0, sticky="e")
-        self.entradaTitulo = tk.Entry(frameCampos, width=40)
-        self.entradaTitulo.grid(row=0, column=1, padx=5, pady=5)
-
-        # Descrição
-        tk.Label(frameCampos, text="Descrição:", bg="#f7f7f7").grid(row=1, column=0, sticky="e")
-        self.entradaDescricao = tk.Entry(frameCampos, width=40)
-        self.entradaDescricao.grid(row=1, column=1, padx=5, pady=5)
-
-        # Status
-        tk.Label(frameCampos, text="Status:", bg="#f7f7f7").grid(row=2, column=0, sticky="e")
-        self.statusVar = tk.StringVar()
-        self.comboStatus = ttk.Combobox(frameCampos, textvariable=self.statusVar, values=["Pendente", "Completa"], state="readonly", width=37)
-        self.comboStatus.grid(row=2, column=1, padx=5, pady=5)
-        self.comboStatus.set("Pendente")
-
-        # Botões
-        frameBotoes = tk.Frame(self, bg="#f7f7f7")
-        frameBotoes.pack(pady=10)
-
-        btnAdicionar = tk.Button(frameBotoes, text="Adicionar", command=self.adicionar_tarefa, bg="#4caf50", fg="white", width=12)
-        btnAdicionar.grid(row=0, column=0, padx=5)
-
-        btnAtualizar = tk.Button(frameBotoes, text="Atualizar", command=self.atualizar_tarefa, bg="#2196f3", fg="white", width=12)
-        btnAtualizar.grid(row=0, column=1, padx=5)
-
-        btnExcluir = tk.Button(frameBotoes, text="Excluir", command=self.excluir_tarefa, bg="#f44336", fg="white", width=12)
-        btnExcluir.grid(row=0, column=2, padx=5)
-
-        # Treeview
-        colunas = ("Título", "Descrição", "Status")
-        self.arvoreTarefas = ttk.Treeview(self, columns=colunas, show="headings", height=10)
-        for col in colunas:
-            self.arvoreTarefas.heading(col, text=col)
-            self.arvoreTarefas.column(col, width=150)
-
-        self.arvoreTarefas.pack(pady=10)
-        self.arvoreTarefas.bind("<<TreeviewSelect>>", self.selecionar_tarefa)
-
-    def adicionar_tarefa(self):
-        titulo = self.entradaTitulo.get().strip()
-        descricao = self.entradaDescricao.get().strip()
-        status = self.statusVar.get()
-
-        if not titulo:
-            messagebox.showwarning("Aviso", "O título não pode estar vazio.")
-            return
-
-        novaTarefa = {
-            "Título": titulo,
-            "Descrição": descricao,
-            "Status": status
-        }
-
-        self.colecao.insert_one(novaTarefa)
-        self.limpar_campos()
-        self.carregar_tarefas()
-        messagebox.showinfo("Sucesso", "Tarefa adicionada com sucesso!")
-
-    def atualizar_tarefa(self):
-        if not self.idTarefaSelecionada:
-            messagebox.showwarning("Aviso", "Selecione uma tarefa para atualizar.")
-            return
-
-        try:
-            titulo = self.entradaTitulo.get().strip()
-            descricao = self.entradaDescricao.get().strip()
-            status = self.statusVar.get()
-
-            self.colecao.update_one(
-                {"_id": ObjectId(self.idTarefaSelecionada)},
-                {"$set": {"Título": titulo, "Descrição": descricao, "Status": status}}
-            )
-            self.limpar_campos()
-            self.carregar_tarefas()
-            messagebox.showinfo("Sucesso", "Tarefa atualizada com sucesso!")
-        except Exception as e:
-            messagebox.showerror("Erro", str(e))
-
-    def excluir_tarefa(self):
-        if not self.idTarefaSelecionada:
-            messagebox.showwarning("Aviso", "Selecione uma tarefa para excluir.")
-            return
-
-        self.colecao.delete_one({"_id": ObjectId(self.idTarefaSelecionada)})
-        self.limpar_campos()
-        self.carregar_tarefas()
-        messagebox.showinfo("Sucesso", "Tarefa excluída com sucesso!")
-
-    def carregar_tarefas(self):
-        for item in self.arvoreTarefas.get_children():
-            self.arvoreTarefas.delete(item)
-
-        for tarefa in self.colecao.find():
-            self.arvoreTarefas.insert("", "end", iid=str(tarefa["_id"]), values=(tarefa["Título"], tarefa["Descrição"], tarefa["Status"]))
-
-    def selecionar_tarefa(self, event):
-        selecionado = self.arvoreTarefas.selection()
-        if selecionado:
-            self.idTarefaSelecionada = selecionado[0]
-            dados = self.colecao.find_one({"_id": ObjectId(self.idTarefaSelecionada)})
-            if dados:
-                self.entradaTitulo.delete(0, tk.END)
-                self.entradaTitulo.insert(0, dados["Título"])
-                self.entradaDescricao.delete(0, tk.END)
-                self.entradaDescricao.insert(0, dados["Descrição"])
-                self.statusVar.set(dados["Status"])
-
-    def limpar_campos(self):
-        self.entradaTitulo.delete(0, tk.END)
-        self.entradaDescricao.delete(0, tk.END)
-        self.statusVar.set("Pendente")
-        self.idTarefaSelecionada = None
-
-janelaPrincipal = tk.Tk()
-
-app = SistemaCadastroApp(janelaPrincipal)
-
-janelaPrincipal.mainloop()
+janela = tk.Tk()
+app = SistemaCadastroApp(janela)
+janela.mainloop()
 
 
